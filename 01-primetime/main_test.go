@@ -23,7 +23,8 @@ import (
 
 func TestJSON(t *testing.T) {
 	// s := "{\"method\":\"isPrime\",\"prime\":false}"
-	s := `{"method":"isPrime","number":99028461091604130867360308802317059320180412877139314398,"bignumber":true}`
+	// s := `{"method":"isPrime","number":99028461091604130867360308802317059320180412877139314398,"bignumber":true}`
+	s := `{"method":"isPrime","number":375308.1234}`
 	var req *Request
 
 	if err := json.Unmarshal([]byte(s), &req); err != nil {
