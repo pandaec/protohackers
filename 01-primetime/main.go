@@ -37,6 +37,10 @@ func main() {
 		panic(err)
 	}
 
+	fmt.Println("Pre-calculate prime cache")
+	isPrime := IsPrime()
+	isPrime(100_000_001)
+	fmt.Println("End Pre-calculate prime cache")
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -44,7 +48,7 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("connection from ", conn.RemoteAddr())
-		go handle(conn, IsPrime(), primeRes, notPrimeRes)
+		go handle(conn, isPrime, primeRes, notPrimeRes)
 	}
 }
 
