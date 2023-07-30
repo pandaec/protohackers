@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"math"
+	"math/big"
 	"net"
 	"os"
 )
@@ -56,8 +56,8 @@ func main() {
 }
 
 type Request struct {
-	Method *string `json:"method"`
-	Number *int    `json:"number"`
+	Method *string  `json:"method"`
+	Number *big.Int `json:"number"`
 }
 
 type Response struct {
@@ -65,23 +65,30 @@ type Response struct {
 	Prime  bool   `json:"prime"`
 }
 
-func IsPrime() func(n int) bool {
+func IsPrime() func(n big.Int) bool {
 	// var cache = make(map[int]bool)
-	return func(n int) bool {
+	return func(n big.Int) bool {
 		// if ret, ok := cache[n]; ok {
 		// 	return ret
 		// }
-		if n == 2 || n == 3 {
+		if n.Cmp(big.NewInt(2)) == 0 || n.Cmp(big.NewInt(3)) == 0 {
 			return true
 		}
-		if n <= 1 {
+		if n.Cmp(big.NewInt(1)) <= 0 {
 			return false
 		}
-		if n%2 == 0 {
+		m := new(big.Int)
+		m = m.Mod(&n, big.NewInt(2))
+		if m.Cmp(big.NewInt(0)) == 0 {
 			return false
 		}
-		for i := 3; i <= int(math.Sqrt(float64(n))); i += 2 {
-			if n%i == 0 {
+
+		z := new(big.Int)
+		z = z.Sqrt(&n)
+		for i := big.NewInt(3); i.Cmp(z) <= 0; i = i.Add(i, big.NewInt(2)) {
+			k := new(big.Int)
+			k = k.Mod(&n, i)
+			if k.Cmp(big.NewInt(0)) == 0 {
 				// cache[n] = false
 				return false
 			}
@@ -91,7 +98,7 @@ func IsPrime() func(n int) bool {
 	}
 }
 
-func handle(conn net.Conn, isPrime func(n int) bool, primeRes []byte, notPrimeRes []byte) {
+func handle(conn net.Conn, isPrime func(n big.Int) bool, primeRes []byte, notPrimeRes []byte) {
 	defer conn.Close()
 
 	scanner := bufio.NewScanner(conn)
