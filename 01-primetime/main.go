@@ -18,7 +18,7 @@ func main() {
 	}
 	fmt.Println("listening on port ", port)
 
-	var failResponse = &response{
+	var failResponse = &Response{
 		Method: "isPrime",
 		Prime:  false,
 	}
@@ -28,7 +28,7 @@ func main() {
 		panic(err)
 	}
 
-	var successResponse = &response{
+	var successResponse = &Response{
 		Method: "isPrime",
 		Prime:  true,
 	}
@@ -49,14 +49,14 @@ func main() {
 	}
 }
 
-type request struct {
-	Method string
-	Number int
+type Request struct {
+	Method string `json:"method"`
+	Number int    `json:"prime"`
 }
 
-type response struct {
-	Method string
-	Prime  bool
+type Response struct {
+	Method string `json:"method"`
+	Prime  bool   `json:"prime"`
 }
 
 func IsPrime(n int) bool {
@@ -74,33 +74,34 @@ func IsPrime(n int) bool {
 	return true
 }
 
-func handle(conn net.Conn, success []byte, failres []byte) {
+func handle(conn net.Conn, successRes []byte, failRes []byte) {
 	defer conn.Close()
 
 	for {
 		buf := bytes.NewBuffer([]byte{})
-		io.Copy(buf, conn)
+		_, err := io.Copy(buf, conn)
+		if err != nil {
+			panic(err)
+		}
 		fmt.Println(buf.String())
 
-		req := request{}
+		req := Request{}
 		if err := json.Unmarshal(buf.Bytes(), &req); err != nil {
 			if _, err := conn.Write(buf.Bytes()); err != nil {
-				fmt.Printf("Write failed")
+				fmt.Printf("Write failed (malform)")
 			}
 			return
 		}
 
-		fmt.Println(req)
-
+		var res []byte
 		if !IsPrime(req.Number) {
-			if _, err := conn.Write(failres); err != nil {
-				fmt.Printf("Write failed (fail res)")
-				return
-			}
+			res = failRes
+		} else {
+			res = successRes
 		}
-
-		if _, err := conn.Write(success); err != nil {
-			fmt.Printf("Write failed (success res)")
+		fmt.Println(string(res))
+		if _, err := conn.Write(res); err != nil {
+			fmt.Printf("Write failed (res)")
 			return
 		}
 	}
