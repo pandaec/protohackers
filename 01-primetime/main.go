@@ -8,6 +8,8 @@ import (
 	"os"
 )
 
+const DEBUG_MODE = false
+
 func main() {
 	port := ":56998"
 	ln, err := net.Listen("tcp", port)
@@ -37,10 +39,10 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("Pre-calculate prime cache")
+	// fmt.Println("Pre-calculate prime cache")
 	isPrime := IsPrime()
-	isPrime(100_000_001)
-	fmt.Println("End Pre-calculate prime cache")
+	// isPrime(100_000_001)
+	// fmt.Println("End Pre-calculate prime cache")
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -94,11 +96,16 @@ func handle(conn net.Conn, isPrime func(n int) bool, primeRes []byte, notPrimeRe
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
 		in := scanner.Bytes()
-		fmt.Println(string(in))
+		if DEBUG_MODE {
+			fmt.Println(string(in))
+		}
+
 		req := Request{}
 		if err := json.Unmarshal(in, &req); err != nil {
 			if _, err := conn.Write(in); err != nil {
-				fmt.Printf("Write failed (malform)")
+				if DEBUG_MODE {
+					fmt.Printf("Write failed (malform)")
+				}
 			}
 			return
 		}
@@ -109,9 +116,13 @@ func handle(conn net.Conn, isPrime func(n int) bool, primeRes []byte, notPrimeRe
 			res = notPrimeRes
 		}
 		res = append(res, byte('\n'))
-		fmt.Println(string(res))
+		if DEBUG_MODE {
+			fmt.Println(string(res))
+		}
 		if _, err := conn.Write(res); err != nil {
-			fmt.Printf("Write failed (res)")
+			if DEBUG_MODE {
+				fmt.Printf("Write failed (res)")
+			}
 			return
 		}
 	}
