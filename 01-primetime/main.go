@@ -77,26 +77,31 @@ func IsPrime(n int) bool {
 func handle(conn net.Conn, success []byte, failres []byte) {
 	defer conn.Close()
 
-	buf := bytes.NewBuffer([]byte{})
-	io.Copy(buf, conn)
-	fmt.Println(buf.String())
+	for {
+		buf := bytes.NewBuffer([]byte{})
+		io.Copy(buf, conn)
+		fmt.Println(buf.String())
 
-	req := request{}
-	if err := json.Unmarshal(buf.Bytes(), &req); err != nil {
-		if _, err := conn.Write(failres); err != nil {
-			fmt.Printf("Write failed")
+		req := request{}
+		if err := json.Unmarshal(buf.Bytes(), &req); err != nil {
+			if _, err := conn.Write(buf.Bytes()); err != nil {
+				fmt.Printf("Write failed")
+			}
+			return
 		}
-		return
-	}
 
-	fmt.Println(req)
+		fmt.Println(req)
 
-	if !IsPrime(req.Number) {
-		if _, err := conn.Write(failres); err != nil {
-			fmt.Printf("Write failed")
+		if !IsPrime(req.Number) {
+			if _, err := conn.Write(failres); err != nil {
+				fmt.Printf("Write failed (fail res)")
+				return
+			}
 		}
-		return
-	}
 
-	// io.Copy(conn, buf)
+		if _, err := conn.Write(success); err != nil {
+			fmt.Printf("Write failed (success res)")
+			return
+		}
+	}
 }
