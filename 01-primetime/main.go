@@ -82,7 +82,7 @@ func handle(conn net.Conn, primeRes []byte, notPrimeRes []byte) {
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
 		in := scanner.Bytes()
-
+		fmt.Printf(string(in))
 		req := Request{}
 		if err := json.Unmarshal(in, &req); err != nil {
 			if _, err := conn.Write(in); err != nil {
@@ -90,7 +90,6 @@ func handle(conn net.Conn, primeRes []byte, notPrimeRes []byte) {
 			}
 			return
 		}
-
 		var res []byte
 		if IsPrime(req.Number) {
 			res = primeRes
