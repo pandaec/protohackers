@@ -63,11 +63,11 @@ type Response struct {
 }
 
 func IsPrime() func(n int) bool {
-	var cache = make(map[int]bool)
+	// var cache = make(map[int]bool)
 	return func(n int) bool {
-		if ret, ok := cache[n]; ok {
-			return ret
-		}
+		// if ret, ok := cache[n]; ok {
+		// 	return ret
+		// }
 		if n == 2 || n == 3 {
 			return true
 		}
@@ -79,12 +79,11 @@ func IsPrime() func(n int) bool {
 		}
 		for i := 3; i <= n/3; i += 2 {
 			if n%i == 0 {
-				cache[n] = true
+				// cache[n] = false
 				return false
-			} else {
-				cache[n] = false
 			}
 		}
+		// cache[n] = true
 		return true
 	}
 }
