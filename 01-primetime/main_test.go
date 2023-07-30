@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 func TestIsPrime(t *testing.T) {
 	primes := []int{2, 3, 5, 47, 211, 1117, 7741, 7879, 494933, 63480017}
@@ -15,5 +18,18 @@ func TestIsPrime(t *testing.T) {
 		if isPrime(n) {
 			t.Fatal("Should not be prime but return true", n)
 		}
+	}
+}
+
+func TestJSON(t *testing.T) {
+	s := "{\"method\":\"isPrime\",\"prime\":false}"
+	var req *Request
+
+	if err := json.Unmarshal([]byte(s), &req); err != nil {
+		panic(err)
+	}
+
+	if *req.Method != "isPrime" && req.Number != nil {
+		t.Fatal("Unexpected unmarshal result")
 	}
 }
