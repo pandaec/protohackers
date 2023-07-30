@@ -1,10 +1,9 @@
 package main
 
 import (
-	"bytes"
+	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"os"
 )
@@ -77,17 +76,13 @@ func IsPrime(n int) bool {
 func handle(conn net.Conn, successRes []byte, failRes []byte) {
 	defer conn.Close()
 
-	for {
-		buf := bytes.NewBuffer([]byte{})
-		_, err := io.Copy(buf, conn)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(buf.String())
+	scanner := bufio.NewScanner(conn)
+	for scanner.Scan() {
+		in := scanner.Bytes()
 
 		req := Request{}
-		if err := json.Unmarshal(buf.Bytes(), &req); err != nil {
-			if _, err := conn.Write(buf.Bytes()); err != nil {
+		if err := json.Unmarshal(in, &req); err != nil {
+			if _, err := conn.Write(in); err != nil {
 				fmt.Printf("Write failed (malform)")
 			}
 			return
@@ -99,6 +94,7 @@ func handle(conn net.Conn, successRes []byte, failRes []byte) {
 		} else {
 			res = successRes
 		}
+		res = append(res, byte('\n'))
 		fmt.Println(string(res))
 		if _, err := conn.Write(res); err != nil {
 			fmt.Printf("Write failed (res)")

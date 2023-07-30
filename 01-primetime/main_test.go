@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestIsPrime(t *testing.T) {
-	primes := []int{2, 3, 5, 47, 211, 1117, 7741, 7879}
+	primes := []int{2, 3, 5, 47, 211, 1117, 7741, 7879, 494933}
 	nonprimes := []int{8, 16, 69, 77, 5823, 6629, 7721}
 
 	for _, n := range primes {
