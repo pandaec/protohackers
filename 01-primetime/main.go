@@ -17,22 +17,22 @@ func main() {
 	}
 	fmt.Println("listening on port ", port)
 
-	var failResponse = &Response{
+	var notPrimeResponse = &Response{
 		Method: "isPrime",
 		Prime:  false,
 	}
 
-	failres, err := json.Marshal(failResponse)
+	notPrimeRes, err := json.Marshal(notPrimeResponse)
 	if err != nil {
 		panic(err)
 	}
 
-	var successResponse = &Response{
+	var primeResponse = &Response{
 		Method: "isPrime",
 		Prime:  true,
 	}
 
-	sucessres, err := json.Marshal(successResponse)
+	primeRes, err := json.Marshal(primeResponse)
 	if err != nil {
 		panic(err)
 	}
@@ -44,7 +44,7 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("connection from ", conn.RemoteAddr())
-		go handle(conn, sucessres, failres)
+		go handle(conn, primeRes, notPrimeRes)
 	}
 }
 
@@ -59,6 +59,9 @@ type Response struct {
 }
 
 func IsPrime(n int) bool {
+	if n < 1 {
+		return false
+	}
 	if n < 4 {
 		return true
 	}
@@ -73,7 +76,7 @@ func IsPrime(n int) bool {
 	return true
 }
 
-func handle(conn net.Conn, successRes []byte, failRes []byte) {
+func handle(conn net.Conn, primeRes []byte, notPrimeRes []byte) {
 	defer conn.Close()
 
 	scanner := bufio.NewScanner(conn)
@@ -89,10 +92,10 @@ func handle(conn net.Conn, successRes []byte, failRes []byte) {
 		}
 
 		var res []byte
-		if !IsPrime(req.Number) {
-			res = failRes
+		if IsPrime(req.Number) {
+			res = primeRes
 		} else {
-			res = successRes
+			res = notPrimeRes
 		}
 		res = append(res, byte('\n'))
 		fmt.Println(string(res))
