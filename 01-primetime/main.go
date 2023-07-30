@@ -44,7 +44,7 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("connection from ", conn.RemoteAddr())
-		go handle(conn, primeRes, notPrimeRes)
+		go handle(conn, IsPrime(), primeRes, notPrimeRes)
 	}
 }
 
@@ -58,31 +58,40 @@ type Response struct {
 	Prime  bool   `json:"prime"`
 }
 
-func IsPrime(n int) bool {
-	if n == 2 || n == 3 {
-		return true
-	}
-	if n <= 1 {
-		return false
-	}
-	if n%2 == 0 {
-		return false
-	}
-	for i := 3; i < n; i += 2 {
-		if n%i == 0 {
+func IsPrime() func(n int) bool {
+	var cache = make(map[int]bool)
+	return func(n int) bool {
+		if ret, ok := cache[n]; ok {
+			return ret
+		}
+		if n == 2 || n == 3 {
+			return true
+		}
+		if n <= 1 {
 			return false
 		}
+		if n%2 == 0 {
+			return false
+		}
+		for i := 3; i <= n/3; i += 2 {
+			if n%i == 0 {
+				cache[n] = true
+				return false
+			} else {
+				cache[n] = false
+			}
+		}
+		return true
 	}
-	return true
 }
 
-func handle(conn net.Conn, primeRes []byte, notPrimeRes []byte) {
+func handle(conn net.Conn, isPrime func(n int) bool, primeRes []byte, notPrimeRes []byte) {
 	defer conn.Close()
 
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
 		in := scanner.Bytes()
-		fmt.Printf(string(in))
+		fmt.Println(string(in))
 		req := Request{}
 		if err := json.Unmarshal(in, &req); err != nil {
 			if _, err := conn.Write(in); err != nil {
@@ -91,7 +100,7 @@ func handle(conn net.Conn, primeRes []byte, notPrimeRes []byte) {
 			return
 		}
 		var res []byte
-		if IsPrime(req.Number) {
+		if isPrime(req.Number) {
 			res = primeRes
 		} else {
 			res = notPrimeRes

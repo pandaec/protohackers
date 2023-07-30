@@ -3,16 +3,16 @@ package main
 import "testing"
 
 func TestIsPrime(t *testing.T) {
-	primes := []int{2, 3, 5, 47, 211, 1117, 7741, 7879, 494933}
+	primes := []int{2, 3, 5, 47, 211, 1117, 7741, 7879, 494933, 63480017}
 	nonprimes := []int{-1, 0, 1, 8, 16, 69, 77, 5823, 6629, 7721, 459655}
-
+	isPrime := IsPrime()
 	for _, n := range primes {
-		if !IsPrime(n) {
+		if !isPrime(n) {
 			t.Fatal("Should be prime but return false", n)
 		}
 	}
 	for _, n := range nonprimes {
-		if IsPrime(n) {
+		if isPrime(n) {
 			t.Fatal("Should not be prime but return true", n)
 		}
 	}
