@@ -109,6 +109,14 @@ func handle(conn net.Conn, isPrime func(n int) bool, primeRes []byte, notPrimeRe
 			}
 			return
 		}
+		if req.Method != "isPrime" {
+			if _, err := conn.Write(in); err != nil {
+				if DEBUG_MODE {
+					fmt.Printf("Write failed (malform)")
+				}
+			}
+		}
+
 		var res []byte
 		if isPrime(req.Number) {
 			res = primeRes
