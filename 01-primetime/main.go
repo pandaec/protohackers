@@ -115,6 +115,7 @@ func handle(conn net.Conn, isPrime func(n int) bool, primeRes []byte, notPrimeRe
 				if DEBUG_MODE {
 					fmt.Printf("Write failed (malform)")
 				}
+				return
 			}
 		}
 
