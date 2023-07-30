@@ -23,7 +23,17 @@ func main() {
 		Prime:  false,
 	}
 
-	res, err := json.Marshal(failResponse)
+	failres, err := json.Marshal(failResponse)
+	if err != nil {
+		panic(err)
+	}
+
+	var successResponse = &response{
+		Method: "isPrime",
+		Prime:  true,
+	}
+
+	sucessres, err := json.Marshal(successResponse)
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +45,7 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("connection from ", conn.RemoteAddr())
-		go handle(conn, res)
+		go handle(conn, sucessres, failres)
 	}
 }
 
@@ -49,11 +59,22 @@ type response struct {
 	Prime  bool
 }
 
-func isPrime(n int) bool {
+func IsPrime(n int) bool {
+	if n < 4 {
+		return true
+	}
+	if n%2 == 0 {
+		return false
+	}
+	for i := 3; i < n; i += 2 {
+		if n%i == 0 {
+			return false
+		}
+	}
 	return true
 }
 
-func handle(conn net.Conn, failResponse []byte) {
+func handle(conn net.Conn, success []byte, failres []byte) {
 	defer conn.Close()
 
 	buf := bytes.NewBuffer([]byte{})
@@ -62,7 +83,7 @@ func handle(conn net.Conn, failResponse []byte) {
 
 	req := request{}
 	if err := json.Unmarshal(buf.Bytes(), &req); err != nil {
-		if _, err := conn.Write(failResponse); err != nil {
+		if _, err := conn.Write(failres); err != nil {
 			fmt.Printf("Write failed")
 		}
 		return
@@ -70,8 +91,8 @@ func handle(conn net.Conn, failResponse []byte) {
 
 	fmt.Println(req)
 
-	if !isPrime(req.Number) {
-		if _, err := conn.Write(failResponse); err != nil {
+	if !IsPrime(req.Number) {
+		if _, err := conn.Write(failres); err != nil {
 			fmt.Printf("Write failed")
 		}
 		return
