@@ -50,7 +50,7 @@ func main() {
 
 type Request struct {
 	Method string `json:"method"`
-	Number int    `json:"prime"`
+	Number int    `json:"number"`
 }
 
 type Response struct {
