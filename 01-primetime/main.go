@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"math/big"
+	"math"
 	"net"
 	"os"
+	"strconv"
 )
 
 const DEBUG_MODE = false
@@ -40,10 +41,6 @@ func main() {
 		panic(err)
 	}
 
-	// fmt.Println("Pre-calculate prime cache")
-	isPrime := IsPrime()
-	// isPrime(100_000_001)
-	// fmt.Println("End Pre-calculate prime cache")
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -51,13 +48,13 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println("connection from ", conn.RemoteAddr())
-		go handle(conn, isPrime, primeRes, notPrimeRes)
+		go handle(conn, primeRes, notPrimeRes)
 	}
 }
 
 type Request struct {
-	Method *string  `json:"method"`
-	Number *big.Int `json:"number"`
+	Method string      `json:"method"`
+	Number json.Number `json:"number"`
 }
 
 type Response struct {
@@ -65,40 +62,43 @@ type Response struct {
 	Prime  bool   `json:"prime"`
 }
 
-func IsPrime() func(n big.Int) bool {
-	// var cache = make(map[int]bool)
-	return func(n big.Int) bool {
-		// if ret, ok := cache[n]; ok {
-		// 	return ret
-		// }
-		if n.Cmp(big.NewInt(2)) == 0 || n.Cmp(big.NewInt(3)) == 0 {
-			return true
-		}
-		if n.Cmp(big.NewInt(1)) <= 0 {
+func IsPrime(n json.Number) bool {
+	for _, c := range n {
+		if c == '-' || c == '.' {
 			return false
 		}
-		m := new(big.Int)
-		m = m.Mod(&n, big.NewInt(2))
-		if m.Cmp(big.NewInt(0)) == 0 {
-			return false
-		}
+	}
 
-		z := new(big.Int)
-		z = z.Sqrt(&n)
-		for i := big.NewInt(3); i.Cmp(z) <= 0; i = i.Add(i, big.NewInt(2)) {
-			k := new(big.Int)
-			k = k.Mod(&n, i)
-			if k.Cmp(big.NewInt(0)) == 0 {
-				// cache[n] = false
-				return false
-			}
-		}
-		// cache[n] = true
+	// Large int handling
+	// Assume they won't request with large integer as IsPrime() can't handle it effectivly anyway
+	lastDigit, _ := strconv.Atoi(n[len(n)-1:].String())
+	if len(n) > 1 && lastDigit%2 == 0 {
+		return false
+	}
+
+	x, err := n.Int64()
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	if x == 2 || x == 3 {
 		return true
 	}
+	if x <= 1 {
+		return false
+	}
+	if x%2 == 0 {
+		return false
+	}
+	for i := int64(3); i <= int64(math.Sqrt(float64(x))); i += 2 {
+		if x%i == 0 {
+			return false
+		}
+	}
+	return true
 }
 
-func handle(conn net.Conn, isPrime func(n big.Int) bool, primeRes []byte, notPrimeRes []byte) {
+func handle(conn net.Conn, primeRes []byte, notPrimeRes []byte) {
 	defer conn.Close()
 
 	scanner := bufio.NewScanner(conn)
@@ -117,7 +117,7 @@ func handle(conn net.Conn, isPrime func(n big.Int) bool, primeRes []byte, notPri
 			}
 			return
 		}
-		if req.Method == nil || req.Number == nil || *req.Method != "isPrime" {
+		if req.Method != "isPrime" {
 			if _, err := conn.Write(in); err != nil {
 				if DEBUG_MODE {
 					fmt.Printf("Write failed (malform)")
@@ -127,7 +127,7 @@ func handle(conn net.Conn, isPrime func(n big.Int) bool, primeRes []byte, notPri
 		}
 
 		var res []byte
-		if isPrime(*req.Number) {
+		if IsPrime(req.Number) {
 			res = primeRes
 		} else {
 			res = notPrimeRes
