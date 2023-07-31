@@ -98,6 +98,25 @@ func IsPrime(n string) bool {
 	return true
 }
 
+func validNumberString(str string) bool {
+	if len(str) == 0 {
+		return false
+	}
+	validChars := []rune{'.', '+', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
+	for _, dc := range str {
+		found := false
+		for _, c := range validChars {
+			if dc == c {
+				found = true
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
 func handle(conn net.Conn, primeRes []byte, notPrimeRes []byte) {
 	defer conn.Close()
 
@@ -126,14 +145,7 @@ func handle(conn net.Conn, primeRes []byte, notPrimeRes []byte) {
 			return
 		}
 
-		validChars := []rune{'.', '+', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
-		for _, dc := range string(req.Number) {
-			for _, c := range validChars {
-				if dc == c {
-					continue
-				}
-			}
-			// Invalid
+		if !validNumberString(string(req.Number)) {
 			if _, err := conn.Write(in); err != nil {
 				if DEBUG_MODE {
 					fmt.Printf("Write failed (malform)")

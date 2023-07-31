@@ -24,6 +24,21 @@ func TestIsPrime(t *testing.T) {
 	}
 }
 
+func TestValidNumberString(t *testing.T) {
+	valids := []string{"123", "0", "-1", "-2312", "16.33344"}
+	invalids := []string{"", "1_123", "1,000", `"9999"`}
+	for _, s := range valids {
+		if !validNumberString(s) {
+			t.Fatal("Should be valid but return false", s)
+		}
+	}
+	for _, s := range invalids {
+		if validNumberString(s) {
+			t.Fatal("Should be invalid but return true", s)
+		}
+	}
+}
+
 func TestJSON(t *testing.T) {
 	// s := "{\"method\":\"isPrime\",\"prime\":false}"
 	s := `{"method":"isPrime","number":99028461091604130867360308802317059320180412877139314398,"bignumber":true}`
