@@ -53,8 +53,8 @@ func main() {
 }
 
 type Request struct {
-	Method string      `json:"method"`
-	Number json.Number `json:"number"`
+	Method string          `json:"method"`
+	Number json.RawMessage `json:"number"`
 }
 
 type Response struct {
@@ -62,7 +62,7 @@ type Response struct {
 	Prime  bool   `json:"prime"`
 }
 
-func IsPrime(n json.Number) bool {
+func IsPrime(n string) bool {
 	for _, c := range n {
 		if c == '-' || c == '.' {
 			return false
@@ -71,12 +71,12 @@ func IsPrime(n json.Number) bool {
 
 	// Large int handling
 	// Assume they won't request with large integer as IsPrime() can't handle it effectivly anyway
-	lastDigit, _ := strconv.Atoi(n[len(n)-1:].String())
+	lastDigit, _ := strconv.Atoi(n[len(n)-1:])
 	if len(n) > 1 && lastDigit%2 == 0 {
 		return false
 	}
 
-	x, err := n.Int64()
+	x, err := strconv.ParseInt(n, 10, 64)
 	if err != nil {
 		fmt.Println(err)
 		return false
@@ -117,7 +117,7 @@ func handle(conn net.Conn, primeRes []byte, notPrimeRes []byte) {
 			}
 			return
 		}
-		if req.Method != "isPrime" || req.Number == "" {
+		if req.Method != "isPrime" || string(req.Number) == "" {
 			if _, err := conn.Write(in); err != nil {
 				if DEBUG_MODE {
 					fmt.Printf("Write failed (malform)")
@@ -126,8 +126,23 @@ func handle(conn net.Conn, primeRes []byte, notPrimeRes []byte) {
 			return
 		}
 
+		validChars := []rune{'.', '+', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
+		for _, dc := range string(req.Number) {
+			for _, c := range validChars {
+				if dc == c {
+					continue
+				}
+			}
+			// Invalid
+			if _, err := conn.Write(in); err != nil {
+				if DEBUG_MODE {
+					fmt.Printf("Write failed (malform)")
+				}
+			}
+		}
+
 		var res []byte
-		if IsPrime(req.Number) {
+		if IsPrime(string(req.Number)) {
 			res = primeRes
 		} else {
 			res = notPrimeRes

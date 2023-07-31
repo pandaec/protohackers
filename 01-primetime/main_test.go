@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"testing"
 )
@@ -10,13 +11,13 @@ func TestIsPrime(t *testing.T) {
 	primes := []int{2, 3, 5, 47, 211, 1117, 7741, 7879, 494933, 63480017}
 	nonprimes := []int{-1, 0, 1, 8, 16, 69, 77, 5823, 6629, 7721, 459655}
 	for _, x := range primes {
-		n := json.Number(strconv.Itoa(x))
+		n := strconv.Itoa(x)
 		if !IsPrime(n) {
 			t.Fatal("Should be prime but return false", n)
 		}
 	}
 	for _, x := range nonprimes {
-		n := json.Number(strconv.Itoa(x))
+		n := strconv.Itoa(x)
 		if IsPrime(n) {
 			t.Fatal("Should not be prime but return true", n)
 		}
@@ -38,6 +39,28 @@ func TestJSON(t *testing.T) {
 		panic(err)
 	}
 
+	if req.Method != "isPrime" {
+		t.Fatal("Unexpected unmarshal result")
+	}
+}
+
+func TestJSONStringNum(t *testing.T) {
+	s := `{"method":"isPrime","number":"7474024", "number1":7474024}`
+
+	type reqs struct {
+		Method  string          `json:"method"`
+		Number  json.RawMessage `json:"number"`
+		Number1 json.RawMessage `json:"number1"`
+	}
+
+	var req reqs
+
+	if err := json.Unmarshal([]byte(s), &req); err != nil {
+		panic(err)
+	}
+	v := string(req.Number)
+	v1 := string(req.Number1)
+	fmt.Println(v, v1)
 	if req.Method != "isPrime" {
 		t.Fatal("Unexpected unmarshal result")
 	}
