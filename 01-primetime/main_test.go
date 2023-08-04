@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 	"testing"
 )
@@ -25,6 +26,11 @@ func TestIsPrime(t *testing.T) {
 }
 
 func TestValidNumberString(t *testing.T) {
+	validNumberString := func(s string) bool {
+		r, _ := regexp.Compile(`^[+-]?\d+(?:\.\d+)?$`)
+		return r.MatchString(s)
+	}
+
 	valids := []string{"123", "0", "-1", "-2312", "16.33344"}
 	invalids := []string{"", "1_123", "1,000", `"9999"`}
 	for _, s := range valids {

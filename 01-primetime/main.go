@@ -3,40 +3,44 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"math"
 	"net"
 	"os"
+	"regexp"
 	"strconv"
 )
 
-const DEBUG_MODE = false
+var debugMode = false
 
 func main() {
-	port := ":56998"
-	ln, err := net.Listen("tcp", port)
+	portArg := flag.Int("port", 56998, "port")
+	debugModeArg := flag.Bool("debug", false, "debug mode")
+	flag.Parse()
+
+	port := *portArg
+	debugMode = *debugModeArg
+
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		fmt.Println("listen: ", err.Error())
 		os.Exit(1)
 	}
 	fmt.Println("listening on port ", port)
 
-	var notPrimeResponse = &Response{
+	notPrimeRes, err := json.Marshal(&Response{
 		Method: "isPrime",
 		Prime:  false,
-	}
-
-	notPrimeRes, err := json.Marshal(notPrimeResponse)
+	})
 	if err != nil {
 		panic(err)
 	}
 
-	var primeResponse = &Response{
+	primeRes, err := json.Marshal(&Response{
 		Method: "isPrime",
 		Prime:  true,
-	}
-
-	primeRes, err := json.Marshal(primeResponse)
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -76,41 +80,15 @@ func IsPrime(n string) bool {
 		return false
 	}
 
-	x, err := strconv.ParseInt(n, 10, 64)
-	if err != nil {
-		fmt.Println(err)
-		return false
-	}
+	x, _ := strconv.ParseInt(n, 10, 64)
 	if x == 2 || x == 3 {
 		return true
 	}
-	if x <= 1 {
+	if x <= 1 || x%2 == 0 || x%3 == 0 {
 		return false
 	}
-	if x%2 == 0 {
-		return false
-	}
-	for i := int64(3); i <= int64(math.Sqrt(float64(x))); i += 2 {
+	for i := int64(5); i <= int64(math.Sqrt(float64(x))); i += 2 {
 		if x%i == 0 {
-			return false
-		}
-	}
-	return true
-}
-
-func validNumberString(str string) bool {
-	if len(str) == 0 {
-		return false
-	}
-	validChars := []rune{'.', '+', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
-	for _, dc := range str {
-		found := false
-		for _, c := range validChars {
-			if dc == c {
-				found = true
-			}
-		}
-		if !found {
 			return false
 		}
 	}
@@ -123,48 +101,50 @@ func handle(conn net.Conn, primeRes []byte, notPrimeRes []byte) {
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
 		in := scanner.Bytes()
-		if DEBUG_MODE {
+		if debugMode {
 			fmt.Println(string(in))
 		}
 
 		req := Request{}
 		if err := json.Unmarshal(in, &req); err != nil {
-			if _, err := conn.Write(in); err != nil {
-				if DEBUG_MODE {
+			if _, err := conn.Write([]byte("🦆")); err != nil {
+				if debugMode {
 					fmt.Printf("Write failed (malform)")
 				}
 			}
 			return
 		}
-		if req.Method != "isPrime" || string(req.Number) == "" {
-			if _, err := conn.Write(in); err != nil {
-				if DEBUG_MODE {
+		numberStr := string(req.Number)
+		if req.Method != "isPrime" || numberStr == "" {
+			if _, err := conn.Write([]byte("🦆")); err != nil {
+				if debugMode {
 					fmt.Printf("Write failed (malform)")
 				}
 			}
 			return
 		}
 
-		if !validNumberString(string(req.Number)) {
-			if _, err := conn.Write(in); err != nil {
-				if DEBUG_MODE {
+		numericPattern, _ := regexp.Compile(`^[+-]?\d+(?:\.\d+)?$`)
+		if !numericPattern.MatchString(numberStr) {
+			if _, err := conn.Write([]byte("🦆")); err != nil {
+				if debugMode {
 					fmt.Printf("Write failed (malform)")
 				}
 			}
 		}
 
 		var res []byte
-		if IsPrime(string(req.Number)) {
+		if IsPrime(numberStr) {
 			res = primeRes
 		} else {
 			res = notPrimeRes
 		}
 		res = append(res, byte('\n'))
-		if DEBUG_MODE {
+		if debugMode {
 			fmt.Println(string(res))
 		}
 		if _, err := conn.Write(res); err != nil {
-			if DEBUG_MODE {
+			if debugMode {
 				fmt.Printf("Write failed (res)")
 			}
 			return
