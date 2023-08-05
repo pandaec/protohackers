@@ -9,7 +9,6 @@ import (
 	"io"
 	"net"
 	"os"
-	"strconv"
 )
 
 var debugMode bool
@@ -123,7 +122,7 @@ func handleConn(conn net.Conn) {
 }
 
 type PacketStruct struct {
-	Header byte
+	Header string
 	P1     int32
 	P2     int32
 }
@@ -141,8 +140,7 @@ func parsePacket(pkt []byte) (packet, error) {
 		}
 	}
 
-	h := strconv.Itoa(int(data.Header))
-	switch h {
+	switch data.Header {
 	case "I":
 		return insert{
 			timestamp: data.P1,
