@@ -1,13 +1,15 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
-	"math"
 	"net"
 	"os"
+	"strconv"
 )
 
 var debugMode bool
@@ -39,30 +41,42 @@ func main() {
 }
 
 type packet interface {
-	process() (bool, error)
+	process(map[int32]int32) (interface{}, error)
 }
 
 type insert struct {
-	timestamp int
-	price     int
+	timestamp int32
+	price     int32
 }
 
 type query struct {
-	mintime int
-	maxtime int
+	mintime int32
+	maxtime int32
 }
 
-func (pkt insert) process() (bool, error) {
-
+func (pkt insert) process(m map[int32]int32) (interface{}, error) {
+	m[pkt.timestamp] = pkt.price
+	return m, nil
 }
 
-func (pkt query) process() (bool, error) {
-
+func (pkt query) process(m map[int32]int32) (interface{}, error) {
+	count, sum := int32(0), int32(0)
+	for timestamp, price := range m {
+		if pkt.mintime <= timestamp && timestamp >= pkt.maxtime {
+			count += 1
+			sum += price
+		}
+	}
+	if count == 0 {
+		return 0, nil
+	}
+	return sum / count, nil
 }
 
 func handleConn(conn net.Conn) {
 	defer conn.Close()
 
+	pricedb := make(map[int32]int32)
 	var b = make([]byte, 9)
 	for {
 		if _, err := io.ReadAtLeast(conn, b, 9); err != nil {
@@ -73,25 +87,66 @@ func handleConn(conn net.Conn) {
 		if err != nil {
 			return
 		}
-		fmt.Println(pkt)
+		result, err := pkt.process(pricedb)
+		if err != nil {
+			return
+		}
+		switch value := result.(type) {
+		case int32:
+			buf := new(bytes.Buffer)
+			err := binary.Write(buf, binary.BigEndian, value)
+			if err != nil {
+				if debugMode {
+					fmt.Printf("Write binary failed")
+				}
+			}
+			if _, err := conn.Write(buf.Bytes()); err != nil {
+				if debugMode {
+					fmt.Printf("Write response failed")
+				}
+			}
+		case map[int32]int32:
+			pricedb = value
+		default:
+			if debugMode {
+				fmt.Printf("Unrecognised response")
+			}
+		}
 	}
 }
 
-func parsePacket(pkt []byte) (packet, error) {
-	// length check
+type PacketStruct struct {
+	Header byte
+	P1     int32
+	P2     int32
+}
 
-	switch pkt[1] {
-	case 'I':
+func parsePacket(pkt []byte) (packet, error) {
+	if len(pkt) < 9 {
+		return nil, errors.New("packet too small")
+	}
+
+	data := PacketStruct{}
+	err := binary.Read(bytes.NewBuffer(pkt[:]), binary.BigEndian, &data)
+	if err != nil {
+		if debugMode {
+			fmt.Println("Error: ", err)
+		}
+	}
+
+	h := strconv.Itoa(int(data.Header))
+	switch h {
+	case "I":
 		return insert{
-			timestamp: 1,
-			price:     2,
+			timestamp: data.P1,
+			price:     data.P2,
 		}, nil
-	case 'Q':
+	case "Q":
 		return query{
-			mintime: math.MinInt,
-			maxtime: math.MaxInt,
+			mintime: data.P1,
+			maxtime: data.P2,
 		}, nil
 	default:
-		return nil, errors.New("Unsupported header")
+		return nil, errors.New("unsupported header")
 	}
 }
