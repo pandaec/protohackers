@@ -89,9 +89,6 @@ func handleConn(conn net.Conn) {
 			}
 			return
 		}
-		if debugMode {
-			fmt.Println(pkt)
-		}
 
 		result, err := pkt.process(pricedb)
 		if err != nil {
@@ -142,6 +139,9 @@ func parsePacket(pkt []byte) (packet, error) {
 		if debugMode {
 			fmt.Println("Error: ", err)
 		}
+	}
+	if debugMode {
+		fmt.Println(data)
 	}
 
 	switch data.Header {
