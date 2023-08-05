@@ -59,17 +59,17 @@ func (pkt insert) process(m map[int32]int32) (interface{}, error) {
 }
 
 func (pkt query) process(m map[int32]int32) (interface{}, error) {
-	count, sum := int32(0), int32(0)
+	count, sum := int64(0), int64(0)
 	for timestamp, price := range m {
 		if pkt.mintime <= timestamp && timestamp <= pkt.maxtime {
 			count += 1
-			sum += price
+			sum += int64(price)
 		}
 	}
 	if count == 0 {
 		return int32(0), nil
 	}
-	return sum / count, nil
+	return int32(sum / count), nil
 }
 
 func handleConn(conn net.Conn) {
