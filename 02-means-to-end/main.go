@@ -77,20 +77,27 @@ func handleConn(conn net.Conn) {
 	defer conn.Close()
 
 	pricedb := make(map[int32]int32)
-	var b = make([]byte, 9)
 	for {
+		var b = make([]byte, 9)
 		if _, err := io.ReadAtLeast(conn, b, 9); err != nil {
 			return
 		}
 
 		pkt, err := parsePacket(b)
 		if err != nil {
+			if debugMode {
+				fmt.Println("Error: ", err)
+			}
 			return
 		}
 		result, err := pkt.process(pricedb)
 		if err != nil {
+			if debugMode {
+				fmt.Println("Error: ", err)
+			}
 			return
 		}
+
 		switch value := result.(type) {
 		case int32:
 			buf := new(bytes.Buffer)
