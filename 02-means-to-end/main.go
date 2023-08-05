@@ -61,7 +61,7 @@ func (pkt insert) process(m map[int32]int32) (interface{}, error) {
 func (pkt query) process(m map[int32]int32) (interface{}, error) {
 	count, sum := int32(0), int32(0)
 	for timestamp, price := range m {
-		if pkt.mintime <= timestamp && timestamp >= pkt.maxtime {
+		if pkt.mintime <= timestamp && timestamp <= pkt.maxtime {
 			count += 1
 			sum += price
 		}
