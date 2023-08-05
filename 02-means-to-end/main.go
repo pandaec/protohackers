@@ -122,7 +122,7 @@ func handleConn(conn net.Conn) {
 }
 
 type PacketStruct struct {
-	Header string
+	Header byte
 	P1     int32
 	P2     int32
 }
@@ -141,12 +141,12 @@ func parsePacket(pkt []byte) (packet, error) {
 	}
 
 	switch data.Header {
-	case "I":
+	case 0x49:
 		return insert{
 			timestamp: data.P1,
 			price:     data.P2,
 		}, nil
-	case "Q":
+	case 0x51:
 		return query{
 			mintime: data.P1,
 			maxtime: data.P2,
