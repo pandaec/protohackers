@@ -67,7 +67,7 @@ func (pkt query) process(m map[int32]int32) (interface{}, error) {
 		}
 	}
 	if count == 0 {
-		return 0, nil
+		return int32(0), nil
 	}
 	return sum / count, nil
 }
@@ -118,6 +118,7 @@ func handleConn(conn net.Conn) {
 			if debugMode {
 				fmt.Printf("Unrecognised response")
 			}
+			return
 		}
 	}
 }
